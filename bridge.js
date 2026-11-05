@@ -12,7 +12,9 @@ export class AppsScriptBridge {
     };
     window.addEventListener('message',this.listener);
     const params=new URLSearchParams({origin:location.origin,channel:this.channel});this.address=url+'?'+params;
-    this.frame=document.createElement('iframe');this.frame.hidden=true;this.frame.title='Dịch vụ MiniShare';this.frame.src=this.address;
+    this.frame=document.createElement('iframe');this.frame.hidden=true;this.frame.title='Dịch vụ MiniShare';
+    // Public owner-executed backend: isolate Google account cookies on Chromium.
+    this.frame.setAttribute('credentialless','');this.frame.credentialless=true;this.frame.src=this.address;
     this.frame.setAttribute('sandbox','allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox');document.body.append(this.frame);
   }
   openWindow(){return window.open(this.address,'minishare_service','width=520,height=300');}

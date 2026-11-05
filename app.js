@@ -123,9 +123,9 @@ function renderFiles(){
   $('file-empty').hidden=filtered.length>0;
   $('file-empty').querySelector('h3').textContent=keyword?'Không tìm thấy tệp':'Chưa có tệp';
   $('file-empty').querySelector('p').textContent=keyword?'Hãy thử từ khóa khác.':'Chọn hoặc kéo thả tệp vào đây để tải lên Google Drive.';
-  $('file-rows').innerHTML=filtered.map(f=>{
+  $('file-rows').innerHTML=filtered.map((f,index)=>{
     const ready=f.status==='ready';const time=fmtTime(f.updated_at||f.created_at);
-    return `<tr data-file-row="${escapeHtml(f.id)}"><td><div class="file-main">${badge(f.name)}<div class="file-info"><strong title="${escapeHtml(f.name)}">${escapeHtml(f.name)}</strong><small class="${ready?'':'pending'}">${escapeHtml(statusText(f.status))}</small></div></div></td><td>${fmtSize(f.size)}</td><td>${escapeHtml(time)}</td><td><div class="file-actions">${previewAction(f)}<button class="icon-button cyan" data-file-action="download" data-id="${escapeHtml(f.id)}" aria-label="Tải xuống ${escapeHtml(f.name)}" title="Tải xuống" ${ready?'':'disabled'}>${icon('download')}</button><button class="icon-button" data-file-action="attach" data-id="${escapeHtml(f.id)}" title="Đính kèm vào Chat" aria-label="Đính kèm ${escapeHtml(f.name)}" ${ready?'':'disabled'}>${icon('paperclip')}</button><button class="icon-button delete" data-file-action="delete" data-id="${escapeHtml(f.id)}" title="Xóa tệp khỏi Google Drive và tin liên quan" aria-label="Xóa ${escapeHtml(f.name)}">${icon('trash')}</button></div></td></tr>`;
+    return `<tr data-file-row="${escapeHtml(f.id)}"><td class="file-number">${index+1}</td><td><div class="file-main">${badge(f.name)}<div class="file-info"><strong title="${escapeHtml(f.name)}">${escapeHtml(f.name)}</strong><small class="${ready?'':'pending'}">${escapeHtml(statusText(f.status))}</small></div></div></td><td>${fmtSize(f.size)}</td><td>${escapeHtml(time)}</td><td><div class="file-actions">${previewAction(f)}<button class="icon-button cyan" data-file-action="download" data-id="${escapeHtml(f.id)}" aria-label="Tải xuống ${escapeHtml(f.name)}" title="Tải xuống" ${ready?'':'disabled'}>${icon('download')}</button><button class="icon-button" data-file-action="attach" data-id="${escapeHtml(f.id)}" title="Đính kèm vào Chat" aria-label="Đính kèm ${escapeHtml(f.name)}" ${ready?'':'disabled'}>${icon('paperclip')}</button><button class="icon-button delete" data-file-action="delete" data-id="${escapeHtml(f.id)}" title="Xóa tệp khỏi Google Drive và tin liên quan" aria-label="Xóa ${escapeHtml(f.name)}">${icon('trash')}</button></div></td></tr>`;
   }).join('');
 }
 function renderChat(){
@@ -407,6 +407,8 @@ window.addEventListener('drop',e=>{e.preventDefault();dropDepth=0;$('drop-overla
 window.addEventListener('paste',e=>{const files=[...e.clipboardData?.items||[]].filter(item=>item.kind==='file').map(item=>item.getAsFile()).filter(Boolean);if(files.length){e.preventDefault();uploadFiles(files,state.page==='chat');}});
 window.addEventListener('beforeunload',e=>{if(state.uploadsRunning||transferController){e.preventDefault();e.returnValue='';}});
 // Manual refresh only; no periodic polling.
+// Start the anonymous service connection while the user enters their password.
+if(APPS_SCRIPT_URL){try{serviceBridge=new AppsScriptBridge(APPS_SCRIPT_URL);}catch{}}
 updateConnection();renderFiles();renderChat();switchPage('files');restoreSession();
 if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='127.0.0.1'||location.hostname==='localhost'))navigator.serviceWorker.register('./sw.js').catch(()=>{});
 if('serviceWorker' in navigator)navigator.serviceWorker.addEventListener('message',event=>{
