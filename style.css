@@ -45,3 +45,7 @@
 .preview-footer{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 21px;border-top:1px solid var(--line);color:var(--mute);font-size:12px}
 .preview-footer .button{min-height:40px}
 @media(max-width:760px){.preview-heading{padding:14px}.preview-body{padding:7px;max-height:calc(90vh - 174px)}.preview-pdf{height:65vh}.preview-footer{padding:10px 13px;flex-wrap:wrap}.preview-footer span{font-size:11px}.file-actions{gap:2px}}
+
+.auth-modal .remember-session{display:flex;align-items:center;gap:9px;margin:14px 0 20px;font-size:13px;color:var(--mute)}
+.auth-modal .remember-session input{width:16px;height:16px;margin:0;padding:0}
+#auth-open-service{margin-top:12px;min-height:34px;font-size:12px}

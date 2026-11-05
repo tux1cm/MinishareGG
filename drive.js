@@ -12,7 +12,7 @@ export function project(records, blobs){
   return {files,messages};
 }
 export class Drive {
-  constructor(token,transport=fetch){this.token=token;this.transport=transport;this.snapshot={files:[],messages:[]};this.recordCache=new Map();}
+  constructor(token,transport=globalThis.fetch.bind(globalThis)){this.token=token;this.transport=transport;this.snapshot={files:[],messages:[]};this.recordCache=new Map();}
   async raw(url,init={},retry=true){
     const u=new URL(url);if(u.origin!=='https://www.googleapis.com')throw new Error('Drive URL không hợp lệ');
     for(let attempt=0;;attempt++){

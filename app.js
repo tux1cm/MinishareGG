@@ -1,8 +1,10 @@
 import {MD5} from './md5.js';
-import {Drive} from './drive.js';
-import {GOOGLE_CLIENT_ID} from './config.js';
+import {BackendDrive} from './backend.js';
+import {AppsScriptBridge} from './bridge.js';
+import {saveSession,loadSession,clearSession} from './session.js';
+import {APPS_SCRIPT_URL} from './config.js';
 const API_BASE='https://www.googleapis.com/drive/v3';
-let drive=null,transferController=null,cancelQueue=false;
+let drive=null,transferController=null,cancelQueue=false,serviceBridge=null;
 
 const STORAGE_BUDGET_BYTES = Number.MAX_SAFE_INTEGER; // total project quota, not 50MB/file
 const PROXY_MAX_BYTES = 8 * 1024 * 1024;
@@ -63,13 +65,13 @@ function updateConnection(){
   $('connection-label').textContent=connected?'Đã đăng nhập':'Chưa đăng nhập';
   $('mobile-status').textContent=connected?'Google Drive online':'Chưa đăng nhập';
   $('mobile-status').style.color=connected?'':'#ffbd72';
-  $('settings-api').textContent=API_BASE;
+  $('settings-api').textContent='Google Drive · đăng nhập bằng mật khẩu MiniShare';
 }
 function showAuth(){
-  $('auth-error').hidden=true;$('auth-password').value=GOOGLE_CLIENT_ID||'';$('auth-modal').hidden=false;
+  $('auth-error').hidden=true;$('auth-password').value='';$('auth-modal').hidden=false;
   setTimeout(()=>$('auth-submit').focus(),80);
 }
-function hideAuth(){ $('auth-password').value=GOOGLE_CLIENT_ID||'';$('auth-modal').hidden=true; }
+function hideAuth(){ $('auth-password').value='';$('auth-modal').hidden=true; }
 
 async function request(path,opts={}){
   if(!drive)throw new Error('Chưa đăng nhập Google');
@@ -78,15 +80,24 @@ async function request(path,opts={}){
   if(opts.method==='DELETE'&&match){await drive.remove(decodeURIComponent(match[2]),match[1]==='files');return {ok:true};}
   throw new Error('Thao tác Drive không được hỗ trợ');
 }
-function clearWebSession(){navigator.serviceWorker?.controller?.postMessage({type:'gg-auth-clear'});state.token='';drive=null;updateConnection();}
-async function connect(){
-  if(!GOOGLE_CLIENT_ID)throw new Error('Chưa cấu hình Google Web Client ID trong web/config.js. Xem docs/GOOGLE_SETUP.md.');
-  if(!window.google?.accounts?.oauth2)throw new Error('Chưa tải được Google Identity Services. Kiểm tra mạng rồi thử lại.');
-  const response=await new Promise((resolve,reject)=>{const client=google.accounts.oauth2.initTokenClient({client_id:GOOGLE_CLIENT_ID,scope:'https://www.googleapis.com/auth/drive.file',callback:r=>r.error?reject(new Error(r.error)):resolve(r),error_callback:e=>reject(new Error(e.message||e.type||'Đăng nhập bị đóng'))});client.requestAccessToken({prompt:'select_account'});});
-  state.token=response.access_token;drive=new Drive(state.token);drive.onUnauthorized=()=>{clearWebSession();showAuth();};
-  try{await loadAll();hideAuth();updateConnection();toast('Đã đăng nhập Google Drive');}catch(e){clearWebSession();throw e;}
+function clearWebSession(){navigator.serviceWorker?.controller?.postMessage({type:'gg-auth-clear'});try{clearSession();}catch{}state.token='';drive=null;updateConnection();}
+function backendClient(){
+ if(!APPS_SCRIPT_URL)throw new Error('Chưa cấu hình backend MiniShare. Xem docs/APPS_SCRIPT_SETUP.md.');
+ if(!serviceBridge)serviceBridge=new AppsScriptBridge(APPS_SCRIPT_URL);
+ const backend=new BackendDrive(APPS_SCRIPT_URL,serviceBridge);backend.onUnauthorized=()=>{clearWebSession();showAuth();};return backend;
 }
-async function restoreSession(){clearWebSession();showAuth();}
+async function connect(password){
+ const backend=backendClient(),remember=$('remember-session').checked;
+ const session=await backend.login(password,remember);drive=backend;state.token=session.session;
+ try{await loadAll();try{saveSession(session,remember);}catch{toast('Trình duyệt không lưu được phiên. Phiên hiện tại vẫn dùng được.');}hideAuth();updateConnection();toast('Đã đăng nhập MiniShare');}
+ catch(e){clearWebSession();throw e;}
+}
+async function restoreSession(){
+ let saved=null;try{saved=loadSession();}catch{}
+ if(!saved){showAuth();return;}
+ try{const backend=backendClient();backend.token=saved.session;drive=backend;state.token=saved.session;await loadAll();hideAuth();updateConnection();}
+ catch(e){showAuth();$('auth-error').textContent=e.message;$('auth-error').hidden=false;}
+}
 
 async function loadAll(){
   if(!state.token)return;
@@ -204,7 +215,7 @@ async function mediaSource(file){
  if(!('serviceWorker' in navigator))throw new Error('Trình duyệt không hỗ trợ xem media riêng tư. Hãy tải về.');
  await navigator.serviceWorker.register('./sw.js');await navigator.serviceWorker.ready;
  if(!navigator.serviceWorker.controller)await new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(new Error('Tải lại trang để bật xem media riêng tư')),5000);navigator.serviceWorker.addEventListener('controllerchange',()=>{clearTimeout(timer);resolve();},{once:true});});
- await new Promise((resolve,reject)=>{const channel=new MessageChannel();const timer=setTimeout(()=>reject(new Error('Không kết nối được trình xem media')),5000);channel.port1.onmessage=()=>{clearTimeout(timer);resolve();};navigator.serviceWorker.controller.postMessage({type:'gg-auth',token:state.token},[channel.port2]);});
+ await new Promise((resolve,reject)=>{const channel=new MessageChannel();const timer=setTimeout(()=>reject(new Error('Không kết nối được trình xem media')),5000);channel.port1.onmessage=()=>{clearTimeout(timer);resolve();};navigator.serviceWorker.controller.postMessage({type:'gg-auth',mode:'bridge'},[channel.port2]);});
  return new URL('./__drive_media__/'+encodeURIComponent(file.drive_id),location.href).href;
 }
 async function previewSource(file){return file.id;}
@@ -379,6 +390,7 @@ $('file-rows').addEventListener('click',async e=>{const button=e.target.closest(
 $('chat-messages').addEventListener('click',async e=>{const button=e.target.closest('[data-msg-action]');if(!button)return;const m=state.messages.find(x=>x.id===button.dataset.id);if(!m)return;switch(button.dataset.msgAction){case'copy':await copyText(m.kind==='attachment'?m.file_name||'':m.text||'');break;case'delete-message':await deleteMessage(m);break;case'delete-file':await deleteFile(state.files.find(f=>f.id===m.file_id));break;case'preview':await previewFile(state.files.find(f=>f.id===m.file_id));break;case'download':await downloadFile(state.files.find(f=>f.id===m.file_id));break;}});
 $('send-message').addEventListener('click',sendMessage);$('message-input').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey&&!e.isComposing){e.preventDefault();sendMessage();}});$('message-input').addEventListener('input',e=>{e.target.style.height='46px';e.target.style.height=Math.min(115,Math.max(46,e.target.scrollHeight))+'px';});
 $('change-token').addEventListener('click',()=>{clearWebSession();state.files=[];state.messages=[];renderFiles();renderChat();showAuth();});$('disconnect').addEventListener('click',()=>{clearWebSession();state.files=[];state.messages=[];renderFiles();renderChat();showAuth();toast('Đã đăng xuất.');});
+$('auth-open-service').addEventListener('click',()=>{try{backendClient();serviceBridge.openWindow();}catch(e){$('auth-error').textContent=e.message;$('auth-error').hidden=false;}});
 $('cancel-transfer').addEventListener('click',()=>{cancelQueue=true;transferController?.abort();});
 $('auth-form').addEventListener('submit',async e=>{e.preventDefault();const btn=$('auth-submit');btn.disabled=true;$('auth-error').hidden=true;try{await connect($('auth-password').value);}catch(err){$('auth-error').textContent=err.message;$('auth-error').hidden=false;}finally{btn.disabled=false;}});
 $('preview-close').addEventListener('click',closePreview);
@@ -397,3 +409,8 @@ window.addEventListener('beforeunload',e=>{if(state.uploadsRunning||transferCont
 // Manual refresh only; no periodic polling.
 updateConnection();renderFiles();renderChat();switchPage('files');restoreSession();
 if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='127.0.0.1'||location.hostname==='localhost'))navigator.serviceWorker.register('./sw.js').catch(()=>{});
+if('serviceWorker' in navigator)navigator.serviceWorker.addEventListener('message',event=>{
+ if(event.data?.type!=='minishare-media-request'||!event.ports[0])return;
+ if(!drive||!state.token){event.ports[0].postMessage({type:'error',error:'Đăng nhập MiniShare để xem file.',status:401});return;}
+ drive.serveMedia(event.ports[0],event.data);
+});
