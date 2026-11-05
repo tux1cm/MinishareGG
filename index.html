@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#081324" />
+  <meta name="description" content="MiniShare — quản lý tệp và trò chuyện trên Google Drive Cloud" />
+  <link rel="icon" href="./assets/minishare.ico" />
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="stylesheet" href="./style.css" />
+  <title>MiniShare • Google Drive Cloud</title>
+</head>
+<body>
+  <svg class="svg-bank" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+    <symbol id="i-files" viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 0 1 2-2h4l3 3h7a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z"/></symbol>
+    <symbol id="i-chat" viewBox="0 0 24 24"><path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5c-1.2 0-2.4-.2-3.5-.7L3 21l1.7-5.6A8.5 8.5 0 1 1 21 11.5Z"/></symbol>
+    <symbol id="i-settings" viewBox="0 0 24 24"><path d="M9.6 3h4.8l.5 2.3 1.8.8 2-.9 3.1 3.5-1.4 1.9.1 2.1 1.4 1.8-3.1 3.5-2-.9-1.8.8-.5 2.3H9.6l-.5-2.3-1.8-.8-2 .9-3.1-3.5 1.4-1.8-.1-2.1-1.4-1.9 3.1-3.5 2 .9 1.8-.8L9.6 3Z"/><circle cx="12" cy="12" r="3"/></symbol>
+    <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v12m-5-5 5 5 5-5M4 18v3h16v-3"/></symbol>
+    <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 17V4m-5 5 5-5 5 5M4 17v4h16v-4"/></symbol>
+    <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 7V3l-4 4h4ZM20 7a8 8 0 1 1-2.5-3.3"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="10.8" cy="10.8" r="7.2"/><path d="m16 16 5 5"/></symbol>
+    <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12c2.4-4.2 5.8-6.4 10-6.4S19.6 7.8 22 12c-2.4 4.2-5.8 6.4-10 6.4S4.4 16.2 2 12Z"/><circle cx="12" cy="12" r="2.8"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3m3 0-1 13H7L6 7m4 4v6m4-6v6"/></symbol>
+    <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></symbol>
+    <symbol id="i-send" viewBox="0 0 24 24"><path d="m21 3-7.5 18-3.4-7-7.1-3.5L21 3ZM21 3 10.1 14"/></symbol>
+    <symbol id="i-paperclip" viewBox="0 0 24 24"><path d="m20 11-8.4 8.4a6 6 0 0 1-8.5-8.5l8.6-8.5a4 4 0 0 1 5.7 5.7l-8.7 8.6a2 2 0 0 1-2.8-2.8l7.9-7.9"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="m4 12 5 5L20 6"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 3 2 21h20L12 3Zm0 7v5m0 3v.2"/></symbol>
+    <symbol id="i-close" viewBox="0 0 24 24"><path d="m5 5 14 14M19 5 5 19"/></symbol>
+    <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 8 .3l2-2a5 5 0 0 0-7-7l-2 2M14 11a5 5 0 0 0-8-.3l-2 2a5 5 0 0 0 7 7l2-2"/></symbol>
+    <symbol id="i-logout" viewBox="0 0 24 24"><path d="M10 3H5v18h5m4-4 5-5-5-5m5 5H9"/></symbol>
+    <symbol id="i-file" viewBox="0 0 24 24"><path d="M5 2h9l5 5v15H5zM14 2v5h5M8 13h8M8 17h8"/></symbol>
+    <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></symbol>
+    <symbol id="i-more" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></symbol>
+  </svg>
+
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar">
+      <div class="brand" aria-label="MiniShare">
+        <img src="./assets/minishare.png" alt="" class="brand-icon" />
+        <div><strong>MiniShare</strong><span>GOOGLE / WEB</span></div>
+      </div>
+      <nav class="side-nav" aria-label="Điều hướng">
+        <button class="nav-button active" data-page="files"><svg><use href="#i-files"/></svg><span>Tệp của tôi</span></button>
+        <button class="nav-button" data-page="chat"><svg><use href="#i-chat"/></svg><span>Trò chuyện</span><b id="chat-count" class="nav-count" hidden>0</b></button>
+      </nav>
+      <div class="side-bottom">
+        <button class="nav-button" data-page="settings"><svg><use href="#i-settings"/></svg><span>Cài đặt</span></button>
+        <div class="connection-state"><span class="status-dot" id="status-dot"></span><span id="connection-label">Chưa kết nối</span></div>
+        <small>v3.0.0 <span>Google</span></small>
+      </div>
+    </aside>
+
+    <main class="main">
+      <div class="mobile-header"><div class="mobile-brand"><img src="./assets/minishare.png" alt=""/> MiniShare</div><div id="mobile-status" class="mobile-badge">Chưa kết nối</div></div>
+      <section class="page active" id="page-files" aria-labelledby="title-files">
+        <header class="page-head">
+          <div><div class="eyebrow">KHÔNG GIAN CỦA BẠN</div><h1 id="title-files">Tệp của tôi</h1><p>Toàn bộ tệp đã đồng bộ trên Google Drive</p></div>
+          <div class="page-actions"><button id="refresh-files" class="button subtle"><svg><use href="#i-refresh"/></svg><span>Làm mới</span></button><button id="upload-button" class="button primary"><svg><use href="#i-upload"/></svg><span>Tải tệp lên</span></button></div>
+        </header>
+        <div class="stats-strip"><div class="stat"><span class="stat-icon blue"><svg><use href="#i-files"/></svg></span><div><small>Tổng số tệp</small><strong id="stat-total">—</strong></div></div><div class="stat"><span class="stat-icon green"><svg><use href="#i-check"/></svg></span><div><small>Đã đồng bộ</small><strong id="stat-ready">—</strong></div></div><div class="stat"><span class="stat-icon cyan"><svg><use href="#i-upload"/></svg></span><div><small>Dung lượng</small><strong id="stat-size">—</strong></div></div></div>
+        <div class="searchbar"><svg><use href="#i-search"/></svg><input id="file-search" type="search" placeholder="Tìm tệp theo tên..." autocomplete="off" aria-label="Tìm kiếm tệp" /><kbd>Ctrl K</kbd></div>
+        <div class="file-board"><div class="file-board-head"><strong>Danh sách tệp</strong><span id="file-summary">Đang chờ kết nối</span></div><div class="table-scroll"><table class="file-table"><thead><tr><th>TÊN TỆP</th><th>KÍCH THƯỚC</th><th>CẬP NHẬT</th><th>THAO TÁC</th></tr></thead><tbody id="file-rows"></tbody></table></div><div id="file-empty" class="empty-state" hidden><span class="empty-icon"><svg><use href="#i-files"/></svg></span><h3>Chưa có tệp</h3><p>Chọn hoặc kéo thả tệp vào đây để tải lên Google Drive.</p><button id="empty-upload" class="button primary"><svg><use href="#i-upload"/></svg> Chọn tệp</button></div><div class="board-footer"><span id="file-footer">Đang chờ dữ liệu</span><span class="kbd-tip">Kéo thả • Ctrl+V tệp/ảnh</span></div></div>
+      </section>
+
+      <section class="page chat-page" id="page-chat" aria-labelledby="title-chat" hidden>
+        <header class="page-head"><div><div class="eyebrow">ĐỒNG BỘ MỌI THIẾT BỊ</div><h1 id="title-chat">Trò chuyện</h1><p>Văn bản và tệp đính kèm dùng chung kho Google Drive</p></div><div class="page-actions"><button id="refresh-chat" class="button subtle"><svg><use href="#i-refresh"/></svg><span>Làm mới</span></button></div></header>
+        <div class="chat-panel"><div class="chat-panel-top"><div><span class="tiny-dot"></span><strong>Hội thoại MiniShare</strong></div><span class="encrypted-label">Kết nối HTTPS</span></div><div class="chat-scroll" id="chat-scroll"><div id="chat-empty" class="chat-empty">Chưa có tin nhắn. Hãy gửi tin nhắn đầu tiên.</div><div id="chat-messages" class="chat-messages"></div></div><div class="composer"><button class="attach-button" id="chat-attach" title="Đính kèm tệp"><svg><use href="#i-paperclip"/></svg><span>Đính kèm</span></button><textarea id="message-input" rows="1" maxlength="2047" placeholder="Nhập tin nhắn..." aria-label="Nhập tin nhắn"></textarea><button id="send-message" class="button primary send-button" title="Gửi tin nhắn"><svg><use href="#i-send"/></svg><span>Gửi</span></button></div></div><div class="chat-hint">Enter để gửi • Shift+Enter xuống dòng • Tệp đính kèm tham chiếu File ID</div>
+      </section>
+
+      <section class="page" id="page-settings" aria-labelledby="title-settings" hidden><header class="page-head"><div><div class="eyebrow">CÁ NHÂN HÓA</div><h1 id="title-settings">Cài đặt</h1><p>Kết nối Google Drive Cloud và kiểm soát phiên Web</p></div></header><div class="settings-list"><div class="setting-card"><span class="setting-icon"><svg><use href="#i-link"/></svg></span><div class="setting-details"><h3>Đăng nhập MiniShare</h3><p id="settings-api">—</p><p>Đăng nhập bằng tài khoản Google riêng của MiniShare. File và Chat lưu riêng tư trên Drive.</p></div><button id="change-token" class="button subtle">Đăng nhập lại</button></div><div class="setting-card"><span class="setting-icon"><svg><use href="#i-download"/></svg></span><div class="setting-details"><h3>Thư mục tải xuống</h3><p>Web tải xuống theo cài đặt của trình duyệt. Tùy chọn thư mục của Desktop không tự áp dụng cho Web.</p></div></div><div class="setting-card"><span class="setting-icon"><svg><use href="#i-alert"/></svg></span><div class="setting-details"><h3>Dung lượng Google Drive</h3><p>Dung lượng lấy trực tiếp từ tài khoản Google Drive. Upload theo phiên resumable, không qua server trung gian.</p></div></div><div class="setting-card"><span class="setting-icon"><svg><use href="#i-logout"/></svg></span><div class="setting-details"><h3>Đăng xuất</h3><p>Xóa phiên đăng nhập trên trình duyệt hiện tại; không xóa dữ liệu Google Drive.</p></div><button id="disconnect" class="button danger-outline">Đăng xuất</button></div></div></section>
+    </main>
+  </div>
+
+  <nav class="mobile-nav" aria-label="Điều hướng di động"><button data-page="files" class="active"><svg><use href="#i-files"/></svg><span>Tệp</span></button><button data-page="chat"><svg><use href="#i-chat"/></svg><span>Trò chuyện</span></button><button data-page="settings"><svg><use href="#i-settings"/></svg><span>Cài đặt</span></button></nav>
+  <input id="file-picker" type="file" multiple hidden />
+
+  <div class="drop-overlay" id="drop-overlay" hidden><div><svg><use href="#i-upload"/></svg><strong>Thả tệp để tải lên Google Drive</strong><small>Dùng chung dung lượng Google Drive</small></div></div>
+  <div class="modal-cover" id="auth-modal" hidden><div class="modal auth-modal" role="dialog" aria-modal="true" aria-labelledby="auth-title"><div class="auth-brand"><img src="./assets/minishare.png" alt="" class="auth-logo"/><strong>MiniShare</strong></div><h2 id="auth-title">Web</h2><p>Truy cập tệp và trò chuyện MiniShare từ trình duyệt.</p><form id="auth-form"><input id="auth-password" type="hidden"/><div id="auth-error" class="form-error" role="alert" hidden></div><button type="submit" id="auth-submit" class="button primary full">Đăng nhập bằng Google</button></form><div class="modal-footnote">Phiên Google chỉ giữ trong bộ nhớ. Tải lại trang cần bấm đăng nhập lại.</div></div></div>
+  <div class="modal-cover" id="attach-modal" hidden><div class="modal attach-modal" role="dialog" aria-modal="true" aria-labelledby="attach-title"><div class="modal-title"><div><h2 id="attach-title">Chọn tệp đính kèm</h2><p>Chọn tệp đã có trên Google Drive, không upload lại.</p></div><button class="icon-button" id="close-attach" aria-label="Đóng"><svg><use href="#i-close"/></svg></button></div><div class="modal-search"><svg><use href="#i-search"/></svg><input id="attach-search" type="search" placeholder="Tìm tệp trên Google Drive..."/></div><div class="attach-list" id="attach-list"></div><div class="attach-modal-footer"><button class="button subtle" id="attach-upload">+ Tải tệp mới</button><button class="button subtle" id="attach-cancel">Hủy</button></div></div></div>
+  <div class="modal-cover" id="preview-modal" hidden><div class="modal preview-modal" role="dialog" aria-modal="true" aria-labelledby="preview-heading"><div class="preview-heading"><div class="preview-heading-text"><h2 id="preview-heading">Xem trước tệp</h2><strong id="preview-name"></strong><small id="preview-type"></small></div><button class="icon-button" id="preview-close" title="Đóng" aria-label="Đóng xem trước"><svg><use href="#i-close"/></svg></button></div><div id="preview-body" class="preview-body"></div><div class="preview-footer"><span>Chỉ xem tệp trong MiniShare, không chỉnh sửa dữ liệu Google Drive.</span><button id="preview-download" class="button primary"><svg><use href="#i-download"/></svg> Tải xuống</button></div></div></div>
+  <div class="modal-cover" id="confirm-modal" hidden><div class="modal confirm-modal" role="dialog" aria-modal="true" aria-labelledby="confirm-title"><span class="confirm-icon" id="confirm-icon"><svg><use id="confirm-icon-use" href="#i-trash"/></svg></span><h2 id="confirm-title">Xác nhận xóa</h2><p id="confirm-text"></p><div class="confirm-actions"><button id="confirm-cancel" class="button subtle">Hủy</button><button id="confirm-yes" class="button danger">Xóa</button></div></div></div>
+  <div id="toast-stack" class="toast-stack" role="status" aria-live="polite"></div>
+  <div class="progress-box" id="progress-box" hidden><div class="progress-top"><span id="progress-title">Đang tải...</span><strong id="progress-percent">0%</strong></div><button id="cancel-transfer" class="button subtle" type="button">Hủy truyền</button><div class="progress-track"><div id="progress-bar"></div></div></div>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <script type="module" src="./app.js"></script>
+</body></html>

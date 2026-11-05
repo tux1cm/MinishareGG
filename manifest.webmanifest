@@ -1,0 +1,9 @@
+{
+  "name": "MiniShare Google Drive",
+  "short_name": "MiniShare",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#081324",
+  "theme_color": "#081324",
+  "icons": [{"src":"./assets/minishare.png", "sizes":"512x512", "type":"image/png", "purpose":"any maskable"}]
+}
