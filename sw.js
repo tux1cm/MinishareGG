@@ -1,6 +1,6 @@
 // Public app shell only. Media is streamed through the signed MiniShare backend
 // via the active page; no Google owner token enters the service worker.
-const CACHE='minishare-google-web-v5';
+const CACHE='minishare-google-web-v6';
 const ASSETS=['./','./index.html','./app.js','./backend.js','./bridge.js','./session.js','./drive.js','./md5.js','./style.css','./assets/minishare.ico','./assets/minishare.png','./manifest.webmanifest'];
 self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(ASSETS)).then(()=>self.skipWaiting())));
 self.addEventListener('activate',event=>event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(key=>key.startsWith('minishare-')&&key!==CACHE).map(key=>caches.delete(key)))).then(()=>self.clients.claim())));

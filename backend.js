@@ -15,6 +15,8 @@ export class BackendDrive {
   async call(op,body={},signal){try{return await this.bridge.call(op,body,this.token,signal);}catch(e){if(e.message==='SESSION_EXPIRED')this.onUnauthorized?.();throw e;}}
   async login(password,remember){const result=await this.bridge.call('login',{password,remember});this.token=result.session;return result;}
   async refresh(){const data=await this.call('snapshot');this.ownerId=data.ownerId;this.snapshot={files:data.files,messages:data.messages};return data;}
+  async trash(){return (await this.call('trash.list')).files;}
+  async purgeTrash(ids){let deleted=0;for(let i=0;i<ids.length;i+=20)deleted+=(await this.call('trash.purge',{driveIds:ids.slice(i,i+20)})).deleted;return deleted;}
   file(id){const file=this.snapshot.files.find(x=>x.id===id);if(!file)throw new Error('File không tồn tại');return file;}
   async record(doc){
     const key=`ms-record:${this.ownerId}:${doc.id}`;let ticket=sessionStorage.getItem(key);

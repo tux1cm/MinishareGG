@@ -378,6 +378,28 @@ async function uploadFiles(fileList,attachAfter=false){
 }
 function openPicker(attach=false){state.targetAttachment=attach;$('file-picker').click();}
 
+let trashFiles=[],trashBusy=false;
+async function loadTrash(){
+  if(!drive){showAuth();return;}trashBusy=true;$('trash-summary').textContent='Đang tải thùng rác...';$('trash-list').replaceChildren();$('empty-trash').disabled=true;
+  try{trashFiles=await drive.trash();$('trash-summary').textContent=`${trashFiles.length} tệp • ${fmtSize(trashFiles.reduce((n,f)=>n+Number(f.size||0),0))}`;
+    $('trash-list').innerHTML=trashFiles.length?trashFiles.map(f=>`<div class="trash-row"><div><strong>${escapeHtml(f.name)}</strong><small>${fmtSize(f.size)}</small></div><button class="button danger-outline" data-purge-id="${escapeHtml(f.id)}">Xóa vĩnh viễn</button></div>`).join(''):'<p>Thùng rác MiniShare trống.</p>';
+  }catch(e){trashFiles=[];$('trash-summary').textContent=e.message;toast(e.message,'bad');}finally{trashBusy=false;$('empty-trash').disabled=!trashFiles.length;}
+}
+async function purgeTrash(ids){
+  if(trashBusy||!ids.length)return;
+  const bytes=trashFiles.filter(f=>ids.includes(f.id)).reduce((n,f)=>n+Number(f.size||0),0);
+  if(!await askConfirm(`Xóa vĩnh viễn ${ids.length} tệp (${fmtSize(bytes)}) trong thùng rác MiniShare? Không thể hoàn tác.`,{title:'Giải phóng dung lượng',yesLabel:'Xóa vĩnh viễn'}))return;
+  trashBusy=true;$('empty-trash').disabled=true;$('trash-list').querySelectorAll('button').forEach(b=>b.disabled=true);
+  try{const deleted=await drive.purgeTrash(ids);toast(`Đã xóa vĩnh viễn ${deleted} tệp.`);}catch(e){toast(e.message,'bad');}
+  finally{trashBusy=false;await loadTrash();await refresh(true);}
+}
+$('open-trash').addEventListener('click',()=>{if(!drive){showAuth();return;}$('trash-modal').hidden=false;loadTrash();});
+$('close-trash').addEventListener('click',()=>{$('trash-modal').hidden=true;});
+$('refresh-trash').addEventListener('click',()=>{if(!trashBusy)loadTrash();});
+$('empty-trash').addEventListener('click',()=>purgeTrash(trashFiles.map(f=>f.id)));
+$('trash-list').addEventListener('click',e=>{const button=e.target.closest('[data-purge-id]');if(button)purgeTrash([button.dataset.purgeId]);});
+$('trash-modal').addEventListener('click',e=>{if(e.target===$('trash-modal'))$('trash-modal').hidden=true;});
+
 // UI wiring
 $$('[data-page]').forEach(button=>button.addEventListener('click',()=>switchPage(button.dataset.page)));
 $('refresh-files').addEventListener('click',()=>refresh());$('refresh-chat').addEventListener('click',()=>refresh());
@@ -398,7 +420,7 @@ $('preview-modal').addEventListener('click',e=>{if(e.target===$('preview-modal')
 $('preview-download').addEventListener('click',async()=>{const file=state.files.find(f=>f.id===state.previewFileId);if(file){closePreview();await downloadFile(file);}});
 $('confirm-cancel').addEventListener('click',()=>resolveDelete(false));$('confirm-yes').addEventListener('click',()=>resolveDelete(true));
 $('confirm-modal').addEventListener('click',e=>{if(e.target===$('confirm-modal'))resolveDelete(false);});$('attach-modal').addEventListener('click',e=>{if(e.target===$('attach-modal'))hideAttachmentPicker();});
-window.addEventListener('keydown',e=>{if(e.key==='Escape'){if(!$('preview-modal').hidden)closePreview();else if(state.pendingConfirm)resolveDelete(false);else if(!$('attach-modal').hidden)hideAttachmentPicker();}if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){e.preventDefault();switchPage('files');$('file-search').focus();}});
+window.addEventListener('keydown',e=>{if(e.key==='Escape'){if(!$('preview-modal').hidden)closePreview();else if(state.pendingConfirm)resolveDelete(false);else if(!$('trash-modal').hidden)$('trash-modal').hidden=true;else if(!$('attach-modal').hidden)hideAttachmentPicker();}if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){e.preventDefault();switchPage('files');$('file-search').focus();}});
 let dropDepth=0;
 window.addEventListener('dragenter',e=>{if([...e.dataTransfer?.types||[]].includes('Files')){dropDepth++;e.preventDefault();$('drop-overlay').hidden=false;}});
 window.addEventListener('dragover',e=>{if([...e.dataTransfer?.types||[]].includes('Files'))e.preventDefault();});
