@@ -13,7 +13,7 @@ export function byteRange(header,total){
 export class BackendDrive {
   constructor(url,bridge){this.bridge=bridge||new AppsScriptBridge(url);this.token='';this.usesBridge=true;this.snapshot={files:[],messages:[]};}
   async call(op,body={},signal){try{return await this.bridge.call(op,body,this.token,signal);}catch(e){if(e.message==='SESSION_EXPIRED')this.onUnauthorized?.();throw e;}}
-  async login(password,remember){const result=await this.bridge.call('login',{password,remember});this.token=result.session;return result;}
+  async login(password,remember){const result=await this.bridge.call('login',{password,remember,snapshot:true});this.token=result.session;if(result.snapshot){this.ownerId=result.snapshot.ownerId;this.snapshot={files:result.snapshot.files,messages:result.snapshot.messages};}return result;}
   async refresh(){const data=await this.call('snapshot');this.ownerId=data.ownerId;this.snapshot={files:data.files,messages:data.messages};return data;}
   async trash(){return (await this.call('trash.list')).files;}
   async purgeTrash(ids){let deleted=0;for(let i=0;i<ids.length;i+=20)deleted+=(await this.call('trash.purge',{driveIds:ids.slice(i,i+20)})).deleted;return deleted;}

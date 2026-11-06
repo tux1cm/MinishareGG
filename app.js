@@ -1,7 +1,7 @@
 import {MD5} from './md5.js';
 import {BackendDrive} from './backend.js';
 import {AppsScriptBridge} from './bridge.js';
-import {saveSession,loadSession,clearSession} from './session.js';
+import {saveSession,loadSession,clearSession,saveSnapshot,loadSnapshot} from './session.js';
 import {APPS_SCRIPT_URL} from './config.js';
 const API_BASE='https://www.googleapis.com/drive/v3';
 let drive=null,transferController=null,cancelQueue=false,serviceBridge=null;
@@ -11,7 +11,8 @@ const PROXY_MAX_BYTES = 8 * 1024 * 1024;
 const PREVIEW_TEXT_MAX = 6 * 1024 * 1024;
 const PREVIEW_DOCX_MAX = 12 * 1024 * 1024;
 const PREVIEW_BLOB_MAX = 36 * 1024 * 1024;
-const state = { token: '', files: [], messages: [], usage: null, page: 'files', uploadsRunning: false, sending: false, refreshing: false, targetAttachment: false, pendingConfirm: null, previewFileId: null, previewObjectUrl: null, previewEpoch: 0 };
+let cacheSession=null;
+const state = { cachedView:false, token: '', files: [], messages: [], usage: null, page: 'files', uploadsRunning: false, sending: false, refreshing: false, targetAttachment: false, pendingConfirm: null, previewFileId: null, previewObjectUrl: null, previewEpoch: 0 };
 const $ = id => document.getElementById(id);
 const $$ = selector => [...document.querySelectorAll(selector)];
 const icon = (name, size=18) => `<svg width="${size}" height="${size}" aria-hidden="true"><use href="#i-${name}"/></svg>`;
@@ -62,7 +63,7 @@ function switchPage(page){
 function updateConnection(){
   const connected=Boolean(state.token);
   $('status-dot').classList.toggle('online',connected);
-  $('connection-label').textContent=connected?'Đã đăng nhập':'Chưa đăng nhập';
+  $('connection-label').textContent=connected?(state.cachedView?'Đang cập nhật dữ liệu...':'Đã đăng nhập'):'Chưa đăng nhập';
   $('mobile-status').textContent=connected?'Google Drive online':'Chưa đăng nhập';
   $('mobile-status').style.color=connected?'':'#ffbd72';
   $('settings-api').textContent='Google Drive · đăng nhập bằng mật khẩu MiniShare';
@@ -80,7 +81,7 @@ async function request(path,opts={}){
   if(opts.method==='DELETE'&&match){await drive.remove(decodeURIComponent(match[2]),match[1]==='files');return {ok:true};}
   throw new Error('Thao tác Drive không được hỗ trợ');
 }
-function clearWebSession(){navigator.serviceWorker?.controller?.postMessage({type:'gg-auth-clear'});try{clearSession();}catch{}state.token='';drive=null;updateConnection();}
+function clearWebSession(){navigator.serviceWorker?.controller?.postMessage({type:'gg-auth-clear'});try{clearSession();}catch{}state.token='';drive=null;cacheSession=null;state.cachedView=false;updateConnection();}
 function backendClient(){
  if(!APPS_SCRIPT_URL)throw new Error('Chưa cấu hình backend MiniShare. Xem docs/APPS_SCRIPT_SETUP.md.');
  if(!serviceBridge)serviceBridge=new AppsScriptBridge(APPS_SCRIPT_URL);
@@ -88,22 +89,23 @@ function backendClient(){
 }
 async function connect(password){
  const backend=backendClient(),remember=$('remember-session').checked;
- const session=await backend.login(password,remember);drive=backend;state.token=session.session;
- try{await loadAll();try{saveSession(session,remember);}catch{toast('Trình duyệt không lưu được phiên. Phiên hiện tại vẫn dùng được.');}hideAuth();updateConnection();toast('Đã đăng nhập MiniShare');}
+ const session=await backend.login(password,remember);drive=backend;state.token=session.session;cacheSession={session:session.session,expiresAt:session.expiresAt};
+ try{try{saveSession(cacheSession,remember);}catch{toast('Trình duyệt không lưu được phiên. Phiên hiện tại vẫn dùng được.');}if(session.snapshot)applySnapshot(session.snapshot);else await loadAll();hideAuth();updateConnection();toast('Đã đăng nhập MiniShare');}
  catch(e){clearWebSession();throw e;}
 }
 async function restoreSession(){
  let saved=null;try{saved=loadSession();}catch{}
  if(!saved){showAuth();return;}
- try{const backend=backendClient();backend.token=saved.session;drive=backend;state.token=saved.session;await loadAll();hideAuth();updateConnection();}
- catch(e){showAuth();$('auth-error').textContent=e.message;$('auth-error').hidden=false;}
+ let cached=null;
+ try{const backend=backendClient();backend.token=saved.session;drive=backend;state.token=saved.session;cacheSession=saved;cached=loadSnapshot(saved,APPS_SCRIPT_URL);if(cached){backend.ownerId=cached.ownerId;backend.snapshot={files:cached.files,messages:cached.messages};applySnapshot(cached,true);hideAuth();updateConnection();}await loadAll();if(drive!==backend||state.token!==saved.session)return;hideAuth();updateConnection();}
+ catch(e){if(cached&&state.token){toast('Đang xem dữ liệu đã lưu. Chưa cập nhật được: '+e.message,'bad');}else{showAuth();$('auth-error').textContent=e.message;$('auth-error').hidden=false;}}
 }
 
 async function loadAll(){
   if(!state.token)return;
-  const activeDrive=drive;const snapshot=await activeDrive.refresh();if(drive!==activeDrive)return;state.files=snapshot.files;state.messages=snapshot.messages;state.usage=snapshot.usage;
-  renderFiles();renderChat();renderAttachList();
+  const activeDrive=drive;const snapshot=await activeDrive.refresh();if(drive!==activeDrive)return;applySnapshot(snapshot);
 }
+function applySnapshot(snapshot,cached=false){state.files=snapshot.files;state.messages=snapshot.messages;state.usage=snapshot.usage;state.cachedView=cached;renderFiles();renderChat();renderAttachList();updateConnection();if(!cached)saveSnapshot(snapshot,cacheSession,APPS_SCRIPT_URL);}
 async function refresh(silent=false){
   if(!state.token){showAuth();return;}
   if(state.refreshing)return;state.refreshing=true;for(const id of ['refresh-files','refresh-chat'])$(id).disabled=true;
@@ -120,6 +122,7 @@ function renderFiles(){
   const filtered=files.filter(f=>String(f.name||'').toLocaleLowerCase('vi').includes(keyword));
   $('file-summary').textContent=`${filtered.length} tệp`;
   $('file-footer').textContent=`${ready.length} tệp đã đồng bộ • ${files.length-ready.length} đang chờ/xử lý • Còn ${fmtSize(state.usage?.available_bytes??0)} / ${state.usage?.limit_bytes?fmtSize(state.usage.limit_bytes):'theo tài khoản'}`;
+  if(state.cachedView)$('file-footer').textContent+=' • Dữ liệu đã lưu, đang cập nhật';
   $('file-empty').hidden=filtered.length>0;
   $('file-empty').querySelector('h3').textContent=keyword?'Không tìm thấy tệp':'Chưa có tệp';
   $('file-empty').querySelector('p').textContent=keyword?'Hãy thử từ khóa khác.':'Chọn hoặc kéo thả tệp vào đây để tải lên Google Drive.';
